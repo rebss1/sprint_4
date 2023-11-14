@@ -19,12 +19,16 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     private let questionsAmount: Int = 10
     private var questionFactory: QuestionFactoryProtocol?
     private var currentQuestion: QuizQuestion?
+    private var alertPresenter: AlertPresenterProtocol?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         questionFactory = QuestionFactory()
         questionFactory?.delegate = self
         questionFactory?.requestNextQuestion()
+        
+        alertPresenter = AlertPresenter()
+        alertPresenter?.delegate = self
     }
     
     //MARK: - QuestionFactoryDelegate
@@ -94,33 +98,30 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
             let text = correctAnswers == questionsAmount ?
                         "Поздравляем, вы ответили на 10 из 10!" :
                         "Вы ответили на \(correctAnswers) из 10, попробуйте ещё раз!"
-            
-            let resultModel = QuizResultsViewModel(title: "Раунд окончен!",
-                                                   text: text,
-                                                   buttonText: "Cыграть еще раз!")
-            show(quiz: resultModel)
+            let resultModel = AlertModel(title: "Раунд окончен!",
+                                         message: text,
+                                         buttonText: "Cыграть еще раз!",
+                                         completion: resetAnswers)
+            alertPresenter?.configureAlert(quiz: resultModel)
         } else {
             currentQuestionIndex = currentQuestionIndex + 1
             self.questionFactory?.requestNextQuestion()
         }
     }
     
-    private func show(quiz result: QuizResultsViewModel){
-        let alertModel = result
-        
+    private func resetAnswers() {
         self.currentQuestionIndex = 0
         self.correctAnswers = 0
-            
+        
         questionFactory?.requestNextQuestion()
-            
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
-        alert.addAction(action)
-        self.present(alert, animated: true, completion: nil)
     }
 }
 
+extension MovieQuizViewController: AlertPresenterDelegate{
+    func alertPresent(alert: UIViewController) {
+        self.present(alert, animated: true, completion: nil)
+    }
+}
 
 /*
  Mock-данные
