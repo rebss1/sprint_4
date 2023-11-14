@@ -106,21 +106,15 @@ final class MovieQuizViewController: UIViewController, QuestionFactoryDelegate {
     }
     
     private func show(quiz result: QuizResultsViewModel){
-        let alert = UIAlertController(title: result.title ,
-                                      message: result.text,
-                                      preferredStyle: .alert)
+        let alertModel = result
         
-        let action = UIAlertAction(title: result.buttonText, style: .default) { [weak self] _ in
-            guard let self = self else { return }
+        self.currentQuestionIndex = 0
+        self.correctAnswers = 0
             
-            self.currentQuestionIndex = 0
-            self.correctAnswers = 0
+        questionFactory?.requestNextQuestion()
             
-            questionFactory?.requestNextQuestion()
-            
-            guard let currentQuestion = currentQuestion else {
-                return
-            }
+        guard let currentQuestion = currentQuestion else {
+            return
         }
         alert.addAction(action)
         self.present(alert, animated: true, completion: nil)
