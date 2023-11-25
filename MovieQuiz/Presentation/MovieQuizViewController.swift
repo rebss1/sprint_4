@@ -86,7 +86,7 @@ final class MovieQuizViewController: UIViewController {
             showFinalResults()
         } else {
             currentQuestionIndex = currentQuestionIndex + 1
-            self.questionFactory?.requestNextQuestion()
+            questionFactory?.requestNextQuestion()
         }
     }
 }
@@ -119,7 +119,7 @@ extension MovieQuizViewController: StatisticServiceDelegate {
         let currentGameResultLine = "Ваш результат: \(correctAnswers) \\\(questionsAmount)"
         let bestGameInfoLine = "Рекорд: \(bestGame.correct)\\\(bestGame.total)"
         + " (\(bestGame.date.dateTimeString))"
-        let averageAccuracyLine = "Средняя точность: \(accuracy))%"
+        let averageAccuracyLine = "Средняя точность: \(accuracy)%"
         
         let resultMessage = [
             currentGameResultLine, totalPlaysCountLine, bestGameInfoLine, averageAccuracyLine ].joined (separator: "\n")

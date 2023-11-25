@@ -7,7 +7,7 @@
 
 import Foundation
 
-class StatisticService {
+final class StatisticService {
     
     private enum Keys: String {
         case correct, total, bestGame, gamesCount
@@ -47,7 +47,11 @@ extension StatisticService: StatisticServiceProtocol {
     }
     
     var totalAccuracy: Double {
-        Double(correct) / Double(total) * 100
+        var totalAccuracy: Double = 0
+        if total != 0 {
+            totalAccuracy = Double(correct) / Double(total) * 100
+        }
+        return totalAccuracy
     }
     
     var gamesCount: Int {
