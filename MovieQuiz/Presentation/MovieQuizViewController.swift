@@ -13,6 +13,8 @@ final class MovieQuizViewController: UIViewController {
     
     @IBOutlet private weak var noButton: UIButton!
     
+    @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
+    
     private var currentQuestionIndex = 0
     private var correctAnswers = 0
     
@@ -24,9 +26,16 @@ final class MovieQuizViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        /*
         questionFactory = QuestionFactory()
         questionFactory?.delegate = self
         questionFactory?.requestNextQuestion()
+        */
+        //imageView.layer.cornerRadius = 20
+        questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
+
+        showLoadingIndicator()
+        questionFactory?.loadData()
         
         alertPresenter = AlertPresenter(viewController: self)
         statisticService = StatisticService()
@@ -50,7 +59,7 @@ final class MovieQuizViewController: UIViewController {
     
     private func convert(model: QuizQuestion) -> QuizStepViewModel {
         QuizStepViewModel(
-            image: UIImage(named: model.image) ?? UIImage(),
+            image: UIImage(data: model.image) ?? UIImage(),
             question: model.text,
             questionNumber: "\(currentQuestionIndex + 1 )/\(questionsAmount)")
     }
@@ -92,6 +101,16 @@ final class MovieQuizViewController: UIViewController {
 }
 
 extension MovieQuizViewController: QuestionFactoryDelegate {
+  
+    internal func didLoadDataFromServer() {
+        hideLoadingIndicator()
+        questionFactory?.requestNextQuestion()
+    }
+    
+    internal func didFailToLoadData(with error: Error) {
+        showNetworkError(message: error.localizedDescription)
+    }
+    
     
     internal func didReceiveNextQuestion(question: QuizQuestion?) {
         guard let question = question else {
@@ -135,13 +154,33 @@ extension MovieQuizViewController: AlertPresenterDelegate {
         
         let alertModel = AlertModel(title: "Игра окончена!",
                                     message: makeAlertMessage(),
-                                    buttonText: "Сыграть заново!",
-                                    completion: { [weak self] in
+                                    buttonText: "Сыграть заново!") { [weak self] in
             self?.currentQuestionIndex = 0
             self?.correctAnswers = 0
             self?.questionFactory?.requestNextQuestion()
         }
-        )
+        alertPresenter?.show(alertModel: alertModel)
+    }
+    
+    private func showLoadingIndicator() {
+        activityIndicator.isHidden = false
+        activityIndicator.startAnimating()
+    }
+    
+    private func hideLoadingIndicator() {
+        activityIndicator.isHidden = true
+    }
+    
+    private func showNetworkError(message: String) {
+        hideLoadingIndicator()
+        
+        let alertModel = AlertModel(title: "Oшибка",
+                                    message: "",
+                                    buttonText: "Попробовать еще раз") { [weak self] in
+            self?.currentQuestionIndex = 0
+            self?.correctAnswers = 0
+            self?.questionFactory?.requestNextQuestion()
+        }
         alertPresenter?.show(alertModel: alertModel)
     }
 }
