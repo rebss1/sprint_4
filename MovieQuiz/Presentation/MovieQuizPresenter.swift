@@ -19,8 +19,8 @@ final class MovieQuizPresenter {
     private var correctAnswers = 0
 
         
-    init(viewController: MovieQuizViewController) {
-        self.viewController = viewController
+    init(viewController: MovieQuizViewControllerProtocol) {
+        self.viewController = viewController as? MovieQuizViewController
         
         statisticService = StatisticService()
             
