@@ -9,19 +9,24 @@ import Foundation
 import UIKit
 
 final class MovieQuizPresenter {
-    let questionsAmount: Int = 10
+    private var questionFactory: QuestionFactoryProtocol?
+    private weak var viewController: MovieQuizViewController?
+    private let statisticService: StatisticServiceProtocol?
+    
+    private var currentQuestion: QuizQuestion?
+    private let questionsAmount: Int = 10
     private var currentQuestionIndex: Int = 0
-    var correctAnswers = 0
+    private var correctAnswers = 0
 
-    var currentQuestion: QuizQuestion?
-    var questionFactory: QuestionFactoryProtocol?
-    weak var viewController: MovieQuizViewController?
         
     init(viewController: MovieQuizViewController) {
         self.viewController = viewController
+        
+        statisticService = StatisticService()
             
         questionFactory = QuestionFactory(moviesLoader: MoviesLoader(), delegate: self)
         questionFactory?.loadData()
+        
         viewController.showLoadingIndicator()
     }
     
@@ -37,6 +42,8 @@ final class MovieQuizPresenter {
     
     func switchToNextQuestion() {
         currentQuestionIndex += 1
+        viewController?.yesButton.isEnabled = true
+        viewController?.noButton.isEnabled = true
     }
     
     func convert(model: QuizQuestion) -> QuizStepViewModel {
@@ -61,17 +68,27 @@ final class MovieQuizPresenter {
         
         let givenAnswer = isCorrectAnswer
         
-        viewController?.showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+        proceedWithAnswer(isCorrect: givenAnswer == currentQuestion.correctAnswer)
         
         if (isCorrectAnswer) { correctAnswers += 1 }
     }
     
-    func showNextQuestionOrResults() {
+    func proceedToNextQuestionOrResults() {
         if self.isLastQuestion() {
             viewController?.showFinalResults()
         } else {
             self.switchToNextQuestion()
             questionFactory?.requestNextQuestion()
+        }
+    }
+    
+    func proceedWithAnswer(isCorrect: Bool) {
+        viewController?.highlightImageBorder(isCorrectAnswer: isCorrect)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self = self else { return }
+            self.proceedToNextQuestionOrResults()
+           
         }
     }
 }
@@ -96,5 +113,29 @@ extension MovieQuizPresenter: QuestionFactoryDelegate {
     
     func didFailToLoadData(with error: Error) {
         viewController?.showNetworkError(message: error.localizedDescription)
+    }
+}
+
+extension MovieQuizPresenter: StatisticServiceDelegate {
+    func makeAlertMessage() -> String {
+        statisticService?.store(correct: correctAnswers, total: questionsAmount)
+        
+        guard
+            let statisticService = statisticService,
+            let bestGame = statisticService.bestGame else {
+            assertionFailure("error message")
+            return ""
+        }
+        let accuracy = String (format: "%.2f", statisticService.totalAccuracy)
+        let totalPlaysCountLine = "Количество сыгранных квизов: \(statisticService.gamesCount) "
+        let currentGameResultLine = "Ваш результат: \(self.correctAnswers) \\\(self.questionsAmount)"
+        let bestGameInfoLine = "Рекорд: \(bestGame.correct)\\\(bestGame.total)"
+        + " (\(bestGame.date.dateTimeString))"
+        let averageAccuracyLine = "Средняя точность: \(accuracy)%"
+        
+        let resultMessage = [
+            currentGameResultLine, totalPlaysCountLine, bestGameInfoLine, averageAccuracyLine ].joined (separator: "\n")
+        
+        return resultMessage
     }
 }
