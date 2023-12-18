@@ -12,16 +12,20 @@ final class MovieQuizPresenter {
         
     let questionsAmount: Int = 10
     private var currentQuestionIndex: Int = 0
-    
+    var correctAnswers = 0
+
     var currentQuestion: QuizQuestion?
+    var questionFactory: QuestionFactoryProtocol?
+
     weak var viewController: MovieQuizViewController?
     
     func isLastQuestion() -> Bool {
         currentQuestionIndex == questionsAmount - 1
     }
     
-    func resetQuestionIndex() {
+    func restartGame() {
         currentQuestionIndex = 0
+        correctAnswers = 0
     }
     
     func switchToNextQuestion() {
@@ -36,18 +40,38 @@ final class MovieQuizPresenter {
     }
     
     func yesButtonClicked() {
-        guard let currentQuestion = currentQuestion else {
-            return
-        }
-        let givenAnswer = true
-        viewController?.showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+        didAnswer(isCorrectAnswer: true)
     }
     
     func noButtonClicked() {
+        didAnswer(isCorrectAnswer: false)
+    }
+    
+    func didAnswer(isCorrectAnswer: Bool) {
         guard let currentQuestion = currentQuestion else {
             return
         }
-        let givenAnswer = false
+        let givenAnswer = isCorrectAnswer
         viewController?.showAnswerResult(isCorrect: givenAnswer == currentQuestion.correctAnswer)
+        if (isCorrectAnswer) { correctAnswers += 1 }    }
+    
+    func didReceiveNextQuestion(question: QuizQuestion?) {
+        guard let question = question else {
+            return
+        }
+        currentQuestion = question
+        let viewModel = convert(model: question)
+        DispatchQueue.main.async { [weak self] in
+            self?.viewController?.show(quiz: viewModel)
+        }
+    }
+    
+    func showNextQuestionOrResults() {
+        if self.isLastQuestion() {
+            viewController?.showFinalResults()
+        } else {
+            self.switchToNextQuestion()
+            questionFactory?.requestNextQuestion()
+        }
     }
 }
